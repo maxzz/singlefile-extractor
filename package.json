@@ -1,0 +1,11 @@
+{
+    "name": "extractor-from-singlefile",
+    "version": "0.1.0",
+    "description": "Extract an elelement + inline styles from SingleFile-saved HTML into a standalone HTML.",
+    "private": true,
+    "license": "MIT",
+    "scripts": {
+        "extract": "python extract_esignature_form.py",
+        "extract:help": "python extract_esignature_form.py --help"
+    }
+}
