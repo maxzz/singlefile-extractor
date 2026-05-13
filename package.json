@@ -5,7 +5,7 @@
     "private": true,
     "license": "MIT",
     "scripts": {
-        "extract": "python savefile_extractor.py",
-        "extract:help": "python savefile_extractor.py --help"
+        "extract": "python singlefile_extractor.py",
+        "extract:help": "python singlefile_extractor.py --help"
     }
 }

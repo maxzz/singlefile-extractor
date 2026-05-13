@@ -31,38 +31,38 @@ I hit a small bug in the helper script: the regex correctly finds `<form ... id=
 - It contains the **full** `<form id="aspnetForm">…</form>` from the embedded e-signature iframe, plus the **embedded styles** (all `<style>` blocks) and the original `<body class="...">` so it should render the same.
 
 ### Helper (optional)
-- I also added `savefile_extractor.py` in the same folder, which re-generates `esignature-form.html` from the source HTML if you need to rerun it.
+- I also added `singlefile_extractor.py` in the same folder, which re-generates `esignature-form.html` from the source HTML if you need to rerun it.
 
 ---
 
 **User**
 
-Very good, Add read me file on how touse savefile_extractor.py and what exactly it does. Also can I use this script to handle similar files from this folder and can I specify different Ids for different files?
+Very good, Add read me file on how touse singlefile_extractor.py and what exactly it does. Also can I use this script to handle similar files from this folder and can I specify different Ids for different files?
 
 ---
 
 **Cursor**
 
-Plan: I’ll (1) read `savefile_extractor.py`, (2) update it to accept command-line args so you can point it at other HTML files and choose a different target `form` id, (3) add a `README.md` explaining what the script does, how to run it, and its limitations/examples.
+Plan: I’ll (1) read `singlefile_extractor.py`, (2) update it to accept command-line args so you can point it at other HTML files and choose a different target `form` id, (3) add a `README.md` explaining what the script does, how to run it, and its limitations/examples.
 
 ## README added + script now supports other files/ids
 
 ### What I changed
 - Added `README.md` in `BSCI-SCREENSHOTS-HTML` with usage + explanation of what the script does.
-- Updated `savefile_extractor.py` so you can run it on **other HTML files** and target **different form ids**.
+- Updated `singlefile_extractor.py` so you can run it on **other HTML files** and target **different form ids**.
 
 ### Can you use it on similar files from this folder?
 Yes. Use `--input` (and optionally `--output`):
 
 ```powershell
-python .\savefile_extractor.py --input "Some Other SingleFile.html" --output "out.html"
+python .\singlefile_extractor.py --input "Some Other SingleFile.html" --output "out.html"
 ```
 
 ### Can you specify different ids for different files?
 Yes. Use `--form-id`:
 
 ```powershell
-python .\savefile_extractor.py --input "Some Other SingleFile.html" --output "out.html" --form-id "myFormId"
+python .\singlefile_extractor.py --input "Some Other SingleFile.html" --output "out.html" --form-id "myFormId"
 ```
 
 ### If the same form id appears multiple times
@@ -70,7 +70,7 @@ This is common with SingleFile nesting. The script will **auto-pick the deepest 
 To force the right one, add `--contains` (example for e-signature):
 
 ```powershell
-python .\savefile_extractor.py --input "Some Other SingleFile.html" --output "out.html" --form-id "aspnetForm" --contains "ESigCaptureVP.aspx"
+python .\singlefile_extractor.py --input "Some Other SingleFile.html" --output "out.html" --form-id "aspnetForm" --contains "ESigCaptureVP.aspx"
 ```
 
 ---

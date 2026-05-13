@@ -1,4 +1,4 @@
-## `savefile_extractor.py`
+## `singlefile_extractor.py`
 
 ### What it does
 This script **extracts one `<form>` element (by id)** from a **SingleFile-saved HTML** and writes it into a **standalone HTML file** that preserves the form’s **visual styling**.
@@ -23,7 +23,7 @@ Specifically it:
 From this folder:
 
 ```powershell
-python .\savefile_extractor.py
+python .\singlefile_extractor.py
 ```
 
 By default, it reads:
@@ -36,14 +36,14 @@ and writes:
 Yes — point it at a different input file:
 
 ```powershell
-python .\savefile_extractor.py --input "Another SingleFile Page.html" --output "out.html"
+python .\singlefile_extractor.py --input "Another SingleFile Page.html" --output "out.html"
 ```
 
 ### Extracting a different form id
 Yes — specify a different form id:
 
 ```powershell
-python .\savefile_extractor.py --input "Some Page.html" --output "some-form.html" --form-id "myFormId"
+python .\singlefile_extractor.py --input "Some Page.html" --output "some-form.html" --form-id "myFormId"
 ```
 
 ### When there are multiple matches (common with SingleFile)
@@ -52,7 +52,7 @@ Sometimes the same `<form id="...">` appears at multiple nesting levels. The scr
 If you want to force which match is used, add `--contains` with a substring that only appears in the correct embedded page (for e-signature pages, `ESigCaptureVP.aspx` is a good discriminator):
 
 ```powershell
-python .\savefile_extractor.py --input "Some Page.html" --output "out.html" --form-id "aspnetForm" --contains "ESigCaptureVP.aspx"
+python .\singlefile_extractor.py --input "Some Page.html" --output "out.html" --form-id "aspnetForm" --contains "ESigCaptureVP.aspx"
 ```
 
 ### Batch example (run on all `.html` files)
@@ -61,7 +61,7 @@ This runs the extractor on every `.html` in the current folder and writes `*-ext
 ```powershell
 Get-ChildItem -Filter *.html | ForEach-Object {
   $out = Join-Path $_.DirectoryName ($_.BaseName + "-extracted.html")
-  python .\savefile_extractor.py --input $_.FullName --output $out --form-id "aspnetForm"
+  python .\singlefile_extractor.py --input $_.FullName --output $out --form-id "aspnetForm"
 }
 ```
 
