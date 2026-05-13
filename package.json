@@ -5,7 +5,7 @@
     "private": true,
     "license": "MIT",
     "scripts": {
-        "extract": "python extract_esignature_form.py",
-        "extract:help": "python extract_esignature_form.py --help"
+        "extract": "python savefile_extractor.py",
+        "extract:help": "python savefile_extractor.py --help"
     }
 }
