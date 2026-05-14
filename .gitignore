@@ -21,3 +21,4 @@ Desktop.ini
 # Opcenter Execution (*.html)
 # esignature-form.html
 tests-local/*.html
+tests-local/*.css
