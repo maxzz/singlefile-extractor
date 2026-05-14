@@ -7,9 +7,9 @@
     "scripts": {
         "extract": "python scripts/singlefile_extractor.py",
         "extract:help": "python scripts/singlefile_extractor.py --help",
-        "moveout-css": "python scripts/moveout-css.py",
-        "moveout-css:help": "python scripts/moveout-css.py --help",
-        "format-html": "python scripts/format-html.py",
-        "format-html:help": "python scripts/format-html.py --help"
+        "css": "python scripts/moveout-css.py",
+        "css:help": "python scripts/moveout-css.py --help",
+        "format": "python scripts/format-html.py",
+        "format:help": "python scripts/format-html.py --help"
     }
 }
