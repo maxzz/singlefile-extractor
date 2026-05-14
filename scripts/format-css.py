@@ -71,6 +71,22 @@ def format_css(css_text: str, *, indent: str = "  ") -> str:
             continue
 
         # Not in comment or string.
+        if c == "\\":
+            # CSS escape outside strings/comments (common in minified data: URLs).
+            # Treat the next character as literal, so we don't accidentally start a string
+            # on sequences like \'.
+            if pending_space and not at_line_start:
+                append(" ")
+            pending_space = False
+
+            append("\\")
+            if i + 1 < n:
+                append(css_text[i + 1])
+                i += 2
+            else:
+                i += 1
+            continue
+
         if c == "/" and i + 1 < n and css_text[i + 1] == "*":
             if pending_space and not at_line_start:
                 append(" ")
