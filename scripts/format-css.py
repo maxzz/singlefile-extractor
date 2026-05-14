@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import runpy
 import sys
 from pathlib import Path
 
@@ -191,7 +192,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     default_input = repo_root / "tests" / "esignature-form.css"
 
     p = argparse.ArgumentParser(
-        description="Format (pretty-print) a CSS file with indentation.",
+        description="Format (pretty-print) a CSS file with indentation. By default it also extracts url(data:...) into a separate vars file and rewrites the CSS to reference them.",
     )
     p.add_argument(
         "-i",
@@ -216,6 +217,44 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         default=2,
         help="Spaces per indent level (default: 2).",
     )
+    p.add_argument(
+        "--no-extract-data-urls",
+        dest="no_extract_data_urls",
+        action="store_true",
+        help="Disable automatic extraction of url(data:...) into a separate vars file.",
+    )
+    p.add_argument(
+        "--data-urls-vars-output",
+        dest="data_urls_vars_output",
+        type=Path,
+        default=None,
+        help='Where to write extracted data-url custom properties (default: "<output_stem>_dataurls-vars.css").',
+    )
+    p.add_argument(
+        "--data-urls-min-var-url-length",
+        dest="data_urls_min_var_url_length",
+        type=int,
+        default=500,
+        help="Only move existing :root custom properties into vars file when the data: URL length is >= this value (default: 500).",
+    )
+    p.add_argument(
+        "--data-urls-var-prefix",
+        dest="data_urls_var_prefix",
+        default="data-url",
+        help='Prefix used for generated custom properties (default: "data-url").',
+    )
+    p.add_argument(
+        "--data-urls-no-import",
+        dest="data_urls_no_import",
+        action="store_true",
+        help="Do not insert an @import for the vars file into the formatted CSS.",
+    )
+    p.add_argument(
+        "--data-urls-import-href",
+        dest="data_urls_import_href",
+        default=None,
+        help="Override the href used in the inserted @import (default: relative path to vars file).",
+    )
     return p.parse_args(argv)
 
 
@@ -234,10 +273,53 @@ def main(argv: list[str]) -> int:
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(formatted, encoding="utf-8", newline="\n")
 
-    print(f"Wrote: {out}")
-    print(f"- input: {src}")
-    print(f"- indent: {indent_spaces} spaces")
-    print(f"- chars: {len(formatted)}")
+    vars_out: Path | None = None
+    if not args.no_extract_data_urls:
+        min_len: int = args.data_urls_min_var_url_length
+        if min_len < 0:
+            raise ValueError("--data-urls-min-var-url-length must be >= 0")
+
+        vars_out = args.data_urls_vars_output or out.with_name(f"{out.stem}_dataurls-vars{out.suffix}")
+        extractor_path = Path(__file__).resolve().with_name("extract-data-urls.py")
+        if not extractor_path.exists():
+            raise RuntimeError(f"Could not locate extract-data-urls.py next to this script: {extractor_path}")
+
+        extractor_globals = runpy.run_path(str(extractor_path))
+        extractor_main = extractor_globals.get("main")
+        if not callable(extractor_main):
+            raise RuntimeError("extract-data-urls.py did not expose a callable main(argv) function.")
+
+        extractor_argv = [
+            "--input",
+            str(out),
+            "--output",
+            str(out),  # overwrite formatted CSS in-place
+            "--vars-output",
+            str(vars_out),
+            "--min-var-url-length",
+            str(min_len),
+            "--var-prefix",
+            str(args.data_urls_var_prefix),
+        ]
+        if args.data_urls_no_import:
+            extractor_argv.append("--no-import")
+        if args.data_urls_import_href:
+            extractor_argv.extend(["--import-href", str(args.data_urls_import_href)])
+
+        # Run the extractor (it prints its own summary).
+        extractor_main(extractor_argv)
+
+    if args.no_extract_data_urls:
+        print(f"Wrote: {out}")
+        print(f"- input: {src}")
+        print(f"- indent: {indent_spaces} spaces")
+        print(f"- chars: {len(formatted)}")
+    else:
+        # The extractor already printed what it wrote; keep this short.
+        print(f"- input: {src}")
+        print(f"- indent: {indent_spaces} spaces")
+        if vars_out:
+            print(f"- vars: {vars_out}")
     return 0
 
 

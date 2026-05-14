@@ -143,6 +143,11 @@ python .\scripts\format-html.py --help
 ### What it does
 Best-effort CSS formatter (pretty-printer). It inserts newlines + indentation around `{`, `}`, and declaration `;` while respecting strings/comments and avoiding breaking tokens inside parentheses (like `url(...)`).
 
+By default it also runs **Data URL extraction** (same logic as `extract-data-urls.py`):
+- finds `url(data:...)` values
+- moves them into a separate `:root { --... }` vars file
+- rewrites the formatted CSS to reference them via `var(--...)` and adds an `@import` for the vars file
+
 ### How to run (Windows / PowerShell)
 If `--output` is omitted, it writes `<input_stem>_formatted.css` next to the input file.
 
@@ -160,6 +165,9 @@ python .\scripts\format-css.py --input "tests-local\esig.smoke.css" --output "te
 - `-i, --input`: Path to the CSS file to format.
 - `-o, --output`: Where to write the formatted CSS (default: `<input>_formatted.css`).
 - `--indent`: Spaces per indent level (default: `2`).
+- `--no-extract-data-urls`: Disable Data URL extraction (formatting only).
+- `--data-urls-vars-output`: Where to write extracted vars CSS (default: `<output_stem>_dataurls-vars.css`).
+- `--data-urls-min-var-url-length`: Threshold for moving existing `:root` vars (default: `500`).
 
 Full CLI help:
 
