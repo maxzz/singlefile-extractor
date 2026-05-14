@@ -5,7 +5,11 @@
     "private": true,
     "license": "MIT",
     "scripts": {
-        "extract": "python singlefile_extractor.py",
-        "extract:help": "python singlefile_extractor.py --help"
+        "extract": "python scripts/singlefile_extractor.py",
+        "extract:help": "python scripts/singlefile_extractor.py --help",
+        "moveout-css": "python scripts/moveout-css.py",
+        "moveout-css:help": "python scripts/moveout-css.py --help",
+        "format-html": "python scripts/format-html.py",
+        "format-html:help": "python scripts/format-html.py --help"
     }
 }

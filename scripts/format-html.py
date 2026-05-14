@@ -222,8 +222,8 @@ def _default_output_path(input_path: Path) -> Path:
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
-    root = Path(__file__).resolve().parent
-    default_input = root / "tests-local" / "esignature-form.external-css.html"
+    repo_root = Path(__file__).resolve().parents[1]
+    default_input = repo_root / "tests-local" / "esignature-form.external-css.html"
 
     p = argparse.ArgumentParser(
         description="Format (pretty-print) an HTML file with indentation.",

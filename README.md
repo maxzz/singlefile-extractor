@@ -2,6 +2,8 @@
 
 Small, standard-library-only Python scripts for extracting and post-processing content from **SingleFile-saved HTML** (often nested via `iframe[srcdoc]`).
 
+All scripts live under `scripts/`.
+
 ## Table of contents
 - [`singlefile_extractor.py`](#singlefile_extractorpy)
 - [`moveout-css.py`](#moveout-csspy)
@@ -25,7 +27,7 @@ Specifically it:
 From this repo folder:
 
 ```powershell
-python .\singlefile_extractor.py
+python .\scripts\singlefile_extractor.py
 ```
 
 By default, it reads `tests/Opcenter Execution (4_28_2026 3：06：53 PM).html` and writes `tests/esignature-form.html`.
@@ -47,15 +49,15 @@ npm run extract:help
 To see the full CLI help:
 
 ```powershell
-python .\singlefile_extractor.py --help
+python .\scripts\singlefile_extractor.py --help
 ```
 
 ### Examples
 
 ```powershell
-python .\singlefile_extractor.py --input "Another SingleFile Page.html" --output "out.html"
-python .\singlefile_extractor.py --input "Some Page.html" --output "some-form.html" --form-id "myFormId"
-python .\singlefile_extractor.py --input "Some Page.html" --output "out.html" --form-id "aspnetForm" --contains "ESigCaptureVP.aspx"
+python .\scripts\singlefile_extractor.py --input "Another SingleFile Page.html" --output "out.html"
+python .\scripts\singlefile_extractor.py --input "Some Page.html" --output "some-form.html" --form-id "myFormId"
+python .\scripts\singlefile_extractor.py --input "Some Page.html" --output "out.html" --form-id "aspnetForm" --contains "ESigCaptureVP.aspx"
 ```
 
 Batch example (run on all `.html` files in a folder):
@@ -63,7 +65,7 @@ Batch example (run on all `.html` files in a folder):
 ```powershell
 Get-ChildItem -Filter *.html | ForEach-Object {
   $out = Join-Path $_.DirectoryName ($_.BaseName + "-extracted.html")
-  python .\singlefile_extractor.py --input $_.FullName --output $out --form-id "aspnetForm"
+  python .\scripts\singlefile_extractor.py --input $_.FullName --output $out --form-id "aspnetForm"
 }
 ```
 
@@ -80,13 +82,13 @@ Moves all inline `<style>...</style>` blocks from an HTML file into a separate `
 Safe (write to new files):
 
 ```powershell
-python .\moveout-css.py --input "tests\esignature-form.html" --output "tests-local\esignature-form.external-css.html" --css-output "tests-local\esignature-form.external-css.css"
+python .\scripts\moveout-css.py --input "tests\esignature-form.html" --output "tests-local\esignature-form.external-css.html" --css-output "tests-local\esignature-form.external-css.css"
 ```
 
 In-place (overwrites `--input`):
 
 ```powershell
-python .\moveout-css.py --input "tests\esignature-form.html"
+python .\scripts\moveout-css.py --input "tests\esignature-form.html"
 ```
 
 ### Options
@@ -98,7 +100,7 @@ python .\moveout-css.py --input "tests\esignature-form.html"
 Full CLI help:
 
 ```powershell
-python .\moveout-css.py --help
+python .\scripts\moveout-css.py --help
 ```
 
 ## `format-html.py`
@@ -110,13 +112,13 @@ Best-effort HTML formatter (pretty-printer). It tokenizes the HTML and writes it
 If `--output` is omitted, it writes `<input_stem>_formatted.html` next to the input file.
 
 ```powershell
-python .\format-html.py --input "tests-local\esignature-form.external-css.html"
+python .\scripts\format-html.py --input "tests-local\esignature-form.external-css.html"
 ```
 
 Example with explicit output + indent:
 
 ```powershell
-python .\format-html.py --input "tests-local\esignature-form.external-css.html" --output "tests-local\out_formatted.html" --indent 2
+python .\scripts\format-html.py --input "tests-local\esignature-form.external-css.html" --output "tests-local\out_formatted.html" --indent 2
 ```
 
 ### Options
@@ -127,7 +129,7 @@ python .\format-html.py --input "tests-local\esignature-form.external-css.html" 
 Full CLI help:
 
 ```powershell
-python .\format-html.py --help
+python .\scripts\format-html.py --help
 ```
 
 ### Notes / limitations

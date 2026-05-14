@@ -83,8 +83,8 @@ def compute_default_href(*, out_html: Path, css_out: Path) -> str:
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
-    root = Path(__file__).resolve().parent
-    default_input = root / "tests" / "esignature-form.html"
+    repo_root = Path(__file__).resolve().parents[1]
+    default_input = repo_root / "tests" / "esignature-form.html"
 
     p = argparse.ArgumentParser(
         description="Move inline <style> CSS blocks into a separate .css file and link it from the HTML.",
