@@ -7,6 +7,8 @@
     "scripts": {
         "extract": "python scripts/singlefile_extractor.py",
         "extract:help": "python scripts/singlefile_extractor.py --help",
+        "extract:data-urls": "python scripts/extract-data-urls.py",
+        "extract:data-urls:help": "python scripts/extract-data-urls.py --help",
         "css": "python scripts/moveout-css.py",
         "css:help": "python scripts/moveout-css.py --help",
         "format": "python scripts/format-html.py",

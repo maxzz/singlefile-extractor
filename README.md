@@ -9,6 +9,7 @@ All scripts live under `scripts/`.
 - [`moveout-css.py`](#moveout-csspy)
 - [`format-html.py`](#format-htmlpy)
 - [`format-css.py`](#format-csspy)
+- [`extract-data-urls.py`](#extract-data-urlspy)
 
 ## `singlefile_extractor.py`
 
@@ -168,4 +169,44 @@ python .\scripts\format-css.py --help
 
 ### Notes / limitations
 - This formatter is **not a full CSS parser**; it may normalize whitespace and is intended for readability.
+
+## `extract-data-urls.py`
+
+### What it does
+Scans a CSS file for `url(data:...)` usages, **moves those data URLs into a separate CSS file as custom properties**, and rewrites the main CSS to reference them via `var(--...)`.
+
+It can also move existing `:root` custom properties (like `--sf-img-*`) into the vars file when their `data:` URL exceeds a configurable length threshold.
+
+### How to run (Windows / PowerShell)
+
+```powershell
+python .\scripts\extract-data-urls.py --input "tests-local\esig.smoke_formatted.css" --output "tests-local\esig.smoke_no-dataurls.css" --vars-output "tests-local\esig.smoke_dataurls-vars.css"
+```
+
+By default, it also inserts an `@import` at the top of the rewritten CSS so the vars file is loaded automatically.
+
+You can also run via npm:
+
+```powershell
+npm run extract:data-urls
+npm run extract:data-urls:help
+```
+
+### Options
+- `-i, --input`: Path to the CSS file to process.
+- `-o, --output`: Where to write the rewritten CSS (default: `<input>_dataurls_extracted.css`).
+- `--vars-output`: Where to write extracted CSS custom properties (default: `<output>_vars.css`).
+- `--min-var-url-length`: Only move existing `:root` custom properties into the vars file if the `data:` URL length is >= this value (default: `500`).
+- `--var-prefix`: Prefix used for generated custom properties (default: `data-url` → names like `--data-url-...`).
+- `--no-import`: Do not insert an `@import` into the rewritten CSS.
+- `--import-href`: Override the href used in the inserted `@import`.
+
+Full CLI help:
+
+```powershell
+python .\scripts\extract-data-urls.py --help
+```
+
+### Notes / limitations
+- Best-effort parsing (like the other formatters). Works well for typical “minified + embedded assets” CSS, but it’s not a full CSS AST parser.
 
