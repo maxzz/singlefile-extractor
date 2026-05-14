@@ -110,23 +110,32 @@ python .\scripts\moveout-css.py --help
 ### What it does
 Best-effort HTML formatter (pretty-printer). It tokenizes the HTML and writes it back with newlines + indentation.
 
+By default it also runs a **CSS pipeline**:
+- extracts inline `<style>...</style>` blocks into a separate CSS file (and inserts a `<link rel="stylesheet" ...>` into the formatted HTML)
+- runs `extract-data-urls.py` on that CSS so `url(data:...)` values are moved into a vars file and referenced via `var(--...)`
+- the resulting CSS is linked from the formatted HTML (and the CSS imports the vars file)
+
 ### How to run (Windows / PowerShell)
 If `--output` is omitted, it writes `<input_stem>_formatted.html` next to the input file.
 
 ```powershell
-python .\scripts\format-html.py --input "tests-local\esignature-form.external-css.html"
+python .\scripts\format-html.py --input "tests\esignature-form.html"
 ```
 
 Example with explicit output + indent:
 
 ```powershell
-python .\scripts\format-html.py --input "tests-local\esignature-form.external-css.html" --output "tests-local\out_formatted.html" --indent 2
+python .\scripts\format-html.py --input "tests\esignature-form.html" --output "tests-local\out_formatted.html" --indent 2
 ```
 
 ### Options
 - `-i, --input`: Path to the HTML file to format.
 - `-o, --output`: Where to write the formatted HTML (default: `<input>_formatted.html`).
 - `--indent`: Spaces per indent level (default: `2`).
+- `--no-css-pipeline`: Disable the CSS pipeline (format HTML only).
+- `--css-output`: Where to write extracted CSS when `<style>` blocks exist (default: `<output_stem>.css`).
+- `--css-href`: Override the href used in the inserted `<link>` tag.
+- `--data-urls-min-var-url-length`: Threshold for moving existing `:root` vars (default: `500`).
 
 Full CLI help:
 

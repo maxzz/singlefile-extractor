@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import argparse
+import html as html_escape
+import os
 import re
+import runpy
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -25,6 +28,16 @@ VOID_ELEMENTS = {
 }
 
 RAWTEXT_ELEMENTS = {"script", "style", "textarea", "pre"}
+
+STYLE_BLOCK_RE = re.compile(r"<style\b[^>]*>(.*?)</style>", flags=re.IGNORECASE | re.DOTALL)
+HEAD_CLOSE_RE = re.compile(r"</head\s*>", flags=re.IGNORECASE)
+HEAD_OPEN_RE = re.compile(r"<head\b[^>]*>", flags=re.IGNORECASE)
+HTML_OPEN_RE = re.compile(r"<html\b[^>]*>", flags=re.IGNORECASE)
+BODY_OPEN_RE = re.compile(r"<body\b[^>]*>", flags=re.IGNORECASE)
+LINK_STYLESHEET_TAG_RE = re.compile(
+    r"<link\b[^>]*\brel\s*=\s*(?:\"stylesheet\"|'stylesheet'|stylesheet)\b[^>]*>",
+    flags=re.IGNORECASE,
+)
 
 IMPLIED_CLOSE_ON_OPEN: dict[str, set[str]] = {
     # Common optional-end-tag elements.
@@ -217,6 +230,86 @@ def format_html(html_text: str, *, indent: str = "  ") -> str:
     return "\n".join(lines).rstrip() + "\n"
 
 
+def extract_style_contents(html_text: str) -> list[str]:
+    return [m.group(1) for m in STYLE_BLOCK_RE.finditer(html_text)]
+
+
+def remove_style_blocks(html_text: str) -> str:
+    return STYLE_BLOCK_RE.sub("", html_text)
+
+
+def _has_stylesheet_link(html_text: str, *, href: str) -> bool:
+    escaped = re.escape(href)
+    link_re = re.compile(
+        rf"<link\b[^>]*\brel\s*=\s*(?:\"stylesheet\"|'stylesheet'|stylesheet)\b[^>]*\bhref\s*=\s*(?:\"{escaped}\"|'{escaped}'|{escaped})(?=[\s>/])",
+        flags=re.IGNORECASE,
+    )
+    return link_re.search(html_text) is not None
+
+
+def insert_stylesheet_link(html_text: str, *, href: str) -> str:
+    if _has_stylesheet_link(html_text, href=href):
+        return html_text
+
+    link_tag = f'<link rel="stylesheet" href="{html_escape.escape(href, quote=True)}">'
+
+    m = HEAD_CLOSE_RE.search(html_text)
+    if m:
+        prefix = html_text[: m.start()]
+        suffix = html_text[m.start() :]
+        if not prefix.endswith("\n"):
+            prefix += "\n"
+        return prefix + link_tag + "\n" + suffix
+
+    # No </head>. Fall back to adding inside/creating a head element.
+    m = HEAD_OPEN_RE.search(html_text)
+    if m:
+        insert_at = m.end()
+        prefix = html_text[:insert_at]
+        suffix = html_text[insert_at:]
+        if not prefix.endswith("\n"):
+            prefix += "\n"
+        return prefix + link_tag + "\n" + suffix
+
+    head_block = f"<head>\n{link_tag}\n</head>\n"
+
+    m = BODY_OPEN_RE.search(html_text)
+    if m:
+        return html_text[: m.start()] + head_block + html_text[m.start() :]
+
+    m = HTML_OPEN_RE.search(html_text)
+    if m:
+        insert_at = m.end()
+        prefix = html_text[:insert_at]
+        suffix = html_text[insert_at:]
+        if not prefix.endswith("\n"):
+            prefix += "\n"
+        return prefix + head_block + suffix
+
+    return head_block + html_text
+
+
+def compute_default_href(*, out_html: Path, css_out: Path) -> str:
+    try:
+        href = os.path.relpath(css_out, start=out_html.parent)
+    except ValueError:
+        href = str(css_out)
+    return href.replace("\\", "/")
+
+
+def iter_linked_stylesheet_hrefs(html_text: str) -> list[str]:
+    hrefs: list[str] = []
+    for m in LINK_STYLESHEET_TAG_RE.finditer(html_text):
+        tag = m.group(0)
+        hm = re.search(r"\bhref\s*=\s*(?:\"([^\"]*)\"|'([^']*)'|([^\s>]+))", tag, flags=re.IGNORECASE)
+        if not hm:
+            continue
+        href = (hm.group(1) or hm.group(2) or hm.group(3) or "").strip()
+        if href:
+            hrefs.append(href)
+    return hrefs
+
+
 def _default_output_path(input_path: Path) -> Path:
     return input_path.with_name(f"{input_path.stem}_formatted{input_path.suffix}")
 
@@ -251,6 +344,57 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         default=2,
         help="Spaces per indent level (default: 2).",
     )
+    p.add_argument(
+        "--no-css-pipeline",
+        dest="no_css_pipeline",
+        action="store_true",
+        help="Disable the default CSS pipeline (extract <style> blocks, run extract-data-urls, and link CSS).",
+    )
+    p.add_argument(
+        "--css-output",
+        dest="css_output_path",
+        type=Path,
+        default=None,
+        help='Where to write extracted CSS when <style> blocks exist (default: "<output_stem>.css").',
+    )
+    p.add_argument(
+        "--css-href",
+        dest="css_href",
+        default=None,
+        help="Override the href used in the inserted <link rel=stylesheet> tag (default: relative path to --css-output).",
+    )
+    p.add_argument(
+        "--data-urls-vars-output",
+        dest="data_urls_vars_output",
+        type=Path,
+        default=None,
+        help='Where to write extracted data-url custom properties (default: "<css_stem>_dataurls-vars.css").',
+    )
+    p.add_argument(
+        "--data-urls-min-var-url-length",
+        dest="data_urls_min_var_url_length",
+        type=int,
+        default=500,
+        help="Only move existing :root custom properties into vars file when the data: URL length is >= this value (default: 500).",
+    )
+    p.add_argument(
+        "--data-urls-var-prefix",
+        dest="data_urls_var_prefix",
+        default="data-url",
+        help='Prefix used for generated custom properties (default: "data-url").',
+    )
+    p.add_argument(
+        "--data-urls-no-import",
+        dest="data_urls_no_import",
+        action="store_true",
+        help="Do not insert an @import for the vars file into the rewritten CSS.",
+    )
+    p.add_argument(
+        "--data-urls-import-href",
+        dest="data_urls_import_href",
+        default=None,
+        help="Override the href used in the inserted @import (default: relative path to vars file).",
+    )
     return p.parse_args(argv)
 
 
@@ -269,10 +413,94 @@ def main(argv: list[str]) -> int:
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(formatted, encoding="utf-8", newline="\n")
 
+    if args.no_css_pipeline:
+        print(f"Wrote: {out}")
+        print(f"- input: {src}")
+        print(f"- indent: {indent_spaces} spaces")
+        print(f"- chars: {len(formatted)}")
+        return 0
+
+    # Default CSS pipeline:
+    # 1) Extract <style> blocks -> CSS file + <link>
+    # 2) Run extract-data-urls.py on that CSS (or on linked CSS if no <style> blocks)
+    css_files: list[Path] = []
+    vars_files: list[Path] = []
+
+    style_chunks = extract_style_contents(formatted)
+    if style_chunks:
+        css_out = args.css_output_path or out.with_suffix(".css")
+        css_out.parent.mkdir(parents=True, exist_ok=True)
+
+        css_text = "\n\n".join(style_chunks).rstrip() + "\n"
+        css_out.write_text(css_text, encoding="utf-8", newline="\n")
+
+        href = args.css_href or compute_default_href(out_html=out, css_out=css_out)
+        html_no_styles = remove_style_blocks(formatted)
+        html_linked = insert_stylesheet_link(html_no_styles, href=href)
+        out.write_text(html_linked, encoding="utf-8", newline="\n")
+
+        css_files.append(css_out)
+    else:
+        # No inline <style> blocks. Try to run data-url extraction on any local linked stylesheets.
+        for href in iter_linked_stylesheet_hrefs(formatted):
+            h = href.strip()
+            if not h:
+                continue
+            if re.match(r"(?i)^(?:https?:)?//", h) or h.casefold().startswith("data:"):
+                continue
+            # Resolve relative to output HTML location.
+            css_path = Path(h)
+            if not css_path.is_absolute():
+                css_path = (out.parent / css_path).resolve()
+            if css_path.exists() and css_path.is_file():
+                css_files.append(css_path)
+
+    if css_files:
+        extractor_path = Path(__file__).resolve().with_name("extract-data-urls.py")
+        if not extractor_path.exists():
+            raise RuntimeError(f"Could not locate extract-data-urls.py next to this script: {extractor_path}")
+        extractor_globals = runpy.run_path(str(extractor_path))
+        extractor_main = extractor_globals.get("main")
+        if not callable(extractor_main):
+            raise RuntimeError("extract-data-urls.py did not expose a callable main(argv) function.")
+
+        min_len: int = args.data_urls_min_var_url_length
+        if min_len < 0:
+            raise ValueError("--data-urls-min-var-url-length must be >= 0")
+
+        if args.data_urls_vars_output and len(css_files) > 1:
+            raise ValueError("--data-urls-vars-output can only be used when processing a single CSS file.")
+
+        for css_path in css_files:
+            vars_out = args.data_urls_vars_output or css_path.with_name(f"{css_path.stem}_dataurls-vars{css_path.suffix}")
+            extractor_argv = [
+                "--input",
+                str(css_path),
+                "--output",
+                str(css_path),  # rewrite in-place
+                "--vars-output",
+                str(vars_out),
+                "--min-var-url-length",
+                str(min_len),
+                "--var-prefix",
+                str(args.data_urls_var_prefix),
+            ]
+            if args.data_urls_no_import:
+                extractor_argv.append("--no-import")
+            if args.data_urls_import_href:
+                extractor_argv.extend(["--import-href", str(args.data_urls_import_href)])
+
+            extractor_main(extractor_argv)
+            vars_files.append(vars_out)
+
+    # Keep this script's own summary short (extractor prints details).
     print(f"Wrote: {out}")
     print(f"- input: {src}")
     print(f"- indent: {indent_spaces} spaces")
-    print(f"- chars: {len(formatted)}")
+    if css_files:
+        print(f"- css files processed: {len(css_files)}")
+    if vars_files:
+        print(f"- vars files written: {len(vars_files)}")
     return 0
 
 
