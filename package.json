@@ -7,13 +7,20 @@
     "scripts": {
         "extract": "python scripts/singlefile_extractor.py",
         "extract:help": "python scripts/singlefile_extractor.py --help",
+        "moveout-css": "python scripts/moveout-css.py",
+        "moveout-css:help": "python scripts/moveout-css.py --help",
+        "beautify:html": "python scripts/format-html.py",
+        "beautify:html:help": "python scripts/format-html.py --help",
+        "beautify:css": "python scripts/format-css.py",
+        "beautify:css:help": "python scripts/format-css.py --help",
         "extract:data-urls": "python scripts/extract-data-urls.py",
         "extract:data-urls:help": "python scripts/extract-data-urls.py --help",
-        "css": "python scripts/moveout-css.py",
-        "css:help": "python scripts/moveout-css.py --help",
-        "format": "python scripts/format-html.py",
-        "format:help": "python scripts/format-html.py --help",
-        "format:css": "python scripts/format-css.py",
-        "format:css:help": "python scripts/format-css.py --help"
+        "beautify:smoke": "python scripts/format-html.py --input tests-local/esig.smoke.html",
+        "css": "npm run moveout-css",
+        "css:help": "npm run moveout-css:help",
+        "format": "npm run beautify:html",
+        "format:help": "npm run beautify:html:help",
+        "format:css": "npm run beautify:css",
+        "format:css:help": "npm run beautify:css:help"
     }
 }
