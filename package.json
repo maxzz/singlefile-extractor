@@ -10,6 +10,8 @@
         "css": "python scripts/moveout-css.py",
         "css:help": "python scripts/moveout-css.py --help",
         "format": "python scripts/format-html.py",
-        "format:help": "python scripts/format-html.py --help"
+        "format:help": "python scripts/format-html.py --help",
+        "format:css": "python scripts/format-css.py",
+        "format:css:help": "python scripts/format-css.py --help"
     }
 }

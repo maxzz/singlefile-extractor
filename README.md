@@ -8,6 +8,7 @@ All scripts live under `scripts/`.
 - [`singlefile_extractor.py`](#singlefile_extractorpy)
 - [`moveout-css.py`](#moveout-csspy)
 - [`format-html.py`](#format-htmlpy)
+- [`format-css.py`](#format-csspy)
 
 ## `singlefile_extractor.py`
 
@@ -135,4 +136,36 @@ python .\scripts\format-html.py --help
 ### Notes / limitations
 - This formatter is **not a lossless HTML parser**; it may normalize whitespace in text nodes.
 - It’s intended for making “tag soup” HTML easier to read, not for producing strictly-valid HTML.
+
+## `format-css.py`
+
+### What it does
+Best-effort CSS formatter (pretty-printer). It inserts newlines + indentation around `{`, `}`, and declaration `;` while respecting strings/comments and avoiding breaking tokens inside parentheses (like `url(...)`).
+
+### How to run (Windows / PowerShell)
+If `--output` is omitted, it writes `<input_stem>_formatted.css` next to the input file.
+
+```powershell
+python .\scripts\format-css.py --input "tests-local\esig.smoke.css"
+```
+
+Example with explicit output + indent:
+
+```powershell
+python .\scripts\format-css.py --input "tests-local\esig.smoke.css" --output "tests-local\esig.smoke_formatted.css" --indent 2
+```
+
+### Options
+- `-i, --input`: Path to the CSS file to format.
+- `-o, --output`: Where to write the formatted CSS (default: `<input>_formatted.css`).
+- `--indent`: Spaces per indent level (default: `2`).
+
+Full CLI help:
+
+```powershell
+python .\scripts\format-css.py --help
+```
+
+### Notes / limitations
+- This formatter is **not a full CSS parser**; it may normalize whitespace and is intended for readability.
 
