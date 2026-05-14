@@ -1,62 +1,64 @@
+# singlefile-extractor utilities
+
+Small, standard-library-only Python scripts for extracting and post-processing content from **SingleFile-saved HTML** (often nested via `iframe[srcdoc]`).
+
+## Table of contents
+- [`singlefile_extractor.py`](#singlefile_extractorpy)
+- [`moveout-css.py`](#moveout-csspy)
+- [`format-html.py`](#format-htmlpy)
+
 ## `singlefile_extractor.py`
 
 ### What it does
-This script **extracts one `<form>` element (by id)** from a **SingleFile-saved HTML** and writes it into a **standalone HTML file** that preserves the form’s **visual styling**.
+Extracts one `<form>` element (by id) from a **SingleFile-saved HTML** and writes it into a **standalone HTML file** that preserves the form’s **visual styling**.
 
 Specifically it:
-- Walks through **nested** `iframe[srcdoc]` documents (SingleFile embeds pages this way).
-- Finds the **first document** that contains `<form id="<your-id>">`.
-- Extracts:
-  - the document’s opening `<body ...>` tag (to keep theme/body classes)
-  - **all inline `<style>...</style>` blocks** from that same document
-  - the full `<form ...> ... </form>` HTML for the requested id
+- Walks through nested `iframe[srcdoc]` documents (SingleFile embeds pages this way).
+- Finds candidate embedded documents that contain `<form id="...">`.
+- Extracts from the chosen document:
+  - the opening `<body ...>` tag (to keep theme/body classes)
+  - all inline `<style>...</style>` blocks
+  - the full `<form ...>...</form>` for the requested id
 - Writes a new HTML file containing only those pieces.
 
-### What it does *not* do
-- It does **not** guarantee the extracted form is fully functional (some pages rely on external scripts/services).
-- It does **not** download external resources. It only keeps what is already embedded in the SingleFile HTML.
-
-### Requirements
-- **Python 3** (uses only the standard library).
-
-### Usage (Windows / PowerShell)
-From this folder:
+### How to run (Windows / PowerShell)
+From this repo folder:
 
 ```powershell
 python .\singlefile_extractor.py
 ```
 
-By default, it reads:
-- `Opcenter Execution (4_28_2026 3：06：53 PM).html`
+By default, it reads `tests/Opcenter Execution (4_28_2026 3：06：53 PM).html` and writes `tests/esignature-form.html`.
 
-and writes:
-- `esignature-form.html`
+You can also run via npm:
 
-### Using it on other similar files in this folder
-Yes — point it at a different input file:
+```powershell
+npm run extract
+npm run extract:help
+```
+
+### Options
+- `-i, --input`: Path to the SingleFile-saved HTML file.
+- `-o, --output`: Where to write the extracted standalone HTML.
+- `--form-id`: The id of the `<form>` element to extract (default: `aspnetForm`).
+- `--contains`: Optional substring filter to disambiguate when multiple matches exist (example: `ESigCaptureVP.aspx`).
+- `--max-depth`: Max depth to recurse through nested `iframe[srcdoc]` (default: `10`).
+
+To see the full CLI help:
+
+```powershell
+python .\singlefile_extractor.py --help
+```
+
+### Examples
 
 ```powershell
 python .\singlefile_extractor.py --input "Another SingleFile Page.html" --output "out.html"
-```
-
-### Extracting a different form id
-Yes — specify a different form id:
-
-```powershell
 python .\singlefile_extractor.py --input "Some Page.html" --output "some-form.html" --form-id "myFormId"
-```
-
-### When there are multiple matches (common with SingleFile)
-Sometimes the same `<form id="...">` appears at multiple nesting levels. The script will **auto-select the deepest match** and print which iframe path it chose.
-
-If you want to force which match is used, add `--contains` with a substring that only appears in the correct embedded page (for e-signature pages, `ESigCaptureVP.aspx` is a good discriminator):
-
-```powershell
 python .\singlefile_extractor.py --input "Some Page.html" --output "out.html" --form-id "aspnetForm" --contains "ESigCaptureVP.aspx"
 ```
 
-### Batch example (run on all `.html` files)
-This runs the extractor on every `.html` in the current folder and writes `*-extracted.html` outputs:
+Batch example (run on all `.html` files in a folder):
 
 ```powershell
 Get-ChildItem -Filter *.html | ForEach-Object {
@@ -65,11 +67,70 @@ Get-ChildItem -Filter *.html | ForEach-Object {
 }
 ```
 
-### Troubleshooting
-- **“Could not find `<form id=...>` …”**:
-  - Confirm the form id is correct.
-  - The form might not be inside `iframe[srcdoc]` in that file.
-  - Increase depth: `--max-depth 15`
-- **“Found multiple … even after filtering by --contains”**:
-  - Pick a more specific `--contains` string.
+### Notes / limitations
+- It does **not** guarantee the extracted form is fully functional (some pages rely on external scripts/services).
+- It does **not** download external resources; it only keeps what is already embedded in the SingleFile HTML.
+
+## `moveout-css.py`
+
+### What it does
+Moves all inline `<style>...</style>` blocks from an HTML file into a separate `.css` file, removes the `<style>` blocks from the HTML, and inserts a `<link rel="stylesheet" href="...">` back into the HTML `<head>`.
+
+### How to run (Windows / PowerShell)
+Safe (write to new files):
+
+```powershell
+python .\moveout-css.py --input "tests\esignature-form.html" --output "tests-local\esignature-form.external-css.html" --css-output "tests-local\esignature-form.external-css.css"
+```
+
+In-place (overwrites `--input`):
+
+```powershell
+python .\moveout-css.py --input "tests\esignature-form.html"
+```
+
+### Options
+- `-i, --input`: Path to the HTML file to process.
+- `-o, --output`: Where to write the updated HTML (default: overwrite `--input`).
+- `--css-output`: Where to write extracted CSS (default: `<output>.css`).
+- `--href`: Optional `href` to use in the inserted `<link>` (default: relative path to `--css-output`).
+
+Full CLI help:
+
+```powershell
+python .\moveout-css.py --help
+```
+
+## `format-html.py`
+
+### What it does
+Best-effort HTML formatter (pretty-printer). It tokenizes the HTML and writes it back with newlines + indentation.
+
+### How to run (Windows / PowerShell)
+If `--output` is omitted, it writes `<input_stem>_formatted.html` next to the input file.
+
+```powershell
+python .\format-html.py --input "tests-local\esignature-form.external-css.html"
+```
+
+Example with explicit output + indent:
+
+```powershell
+python .\format-html.py --input "tests-local\esignature-form.external-css.html" --output "tests-local\out_formatted.html" --indent 2
+```
+
+### Options
+- `-i, --input`: Path to the HTML file to format.
+- `-o, --output`: Where to write the formatted HTML (default: `<input>_formatted.html`).
+- `--indent`: Spaces per indent level (default: `2`).
+
+Full CLI help:
+
+```powershell
+python .\format-html.py --help
+```
+
+### Notes / limitations
+- This formatter is **not a lossless HTML parser**; it may normalize whitespace in text nodes.
+- It’s intended for making “tag soup” HTML easier to read, not for producing strictly-valid HTML.
 

@@ -161,8 +161,8 @@ def build_output_html(*, body_open: str, styles: list[str], links: list[str], fo
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
     root = Path(__file__).resolve().parent
-    default_input = root / "Opcenter Execution (4_28_2026 3：06：53 PM).html"
-    default_output = root / "esignature-form.html"
+    default_input = root / "tests" / "Opcenter Execution (4_28_2026 3：06：53 PM).html"
+    default_output = root / "tests" / "esignature-form.html"
 
     p = argparse.ArgumentParser(
         description="Extract a <form id=...> and related inline styles from a SingleFile HTML (nested iframe srcdoc) into a standalone HTML.",
